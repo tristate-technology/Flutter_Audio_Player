@@ -15,6 +15,7 @@ import MediaPlayer
     let volumeView = MPVolumeView(frame: CGRect.zero)
     var currentDeviceVolume : Double = 0.5
     var strTitle : String = ""
+    var currentAudioTime : Double = 0.0
     let commandCenter = MPRemoteCommandCenter.shared()
     let playingInfoCenter = MPNowPlayingInfoCenter.default()
     
@@ -22,7 +23,7 @@ import MediaPlayer
     override func application(
         _ application: UIApplication,
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
-        ) -> Bool {
+    ) -> Bool {
         
         //Flutter Method and Result
         let controller : FlutterViewController = window?.rootViewController as! FlutterViewController
@@ -75,6 +76,7 @@ import MediaPlayer
             case "setSeekBarProgress":
                 self.isPlayingPlayer()
                 let currentTime = Double(self.getPlayerCurrentTime() ?? 0)
+                self.currentAudioTime=currentTime
                 print("\n\n\n\nCurrent Time Playing Is : ",currentTime,"\n\n\n\n\n\n")
                 methodResult(currentTime)
                 break;
@@ -406,20 +408,80 @@ extension AppDelegate{
     func setBackgroundControls(){
         let pauseCommand = commandCenter.pauseCommand
         let playCommand = commandCenter.playCommand
-        playCommand.addTarget(self, action: #selector(playPauseNotification(event:)))
-        pauseCommand.addTarget(self, action: #selector(playPauseNotification(event:)))
-    } //Background Button Action
-    
-    @objc func playPauseNotification(event : MPSkipIntervalCommandEvent){
-        if audioPlayer?.timeControlStatus == AVPlayer.TimeControlStatus.playing{
-            print("Setting Player To Pause")
-            audioPlayer?.pause()
-            self.isPlayingButton = false
-        }else{
-            print("Setting Player To Play")
-            audioPlayer?.play()
+        let nextTrackCommand = commandCenter.nextTrackCommand
+        let previousTrackCommand = commandCenter.previousTrackCommand
+        let changePlaybackPositionCommand = commandCenter.changePlaybackPositionCommand
+        
+        
+        
+        commandCenter.pauseCommand.isEnabled = true
+        commandCenter.playCommand.isEnabled = true
+        commandCenter.nextTrackCommand.isEnabled = true
+        commandCenter.previousTrackCommand.isEnabled = true
+        commandCenter.changePlaybackPositionCommand.isEnabled = true
+        
+        
+        
+        playCommand.addTarget { (_) -> MPRemoteCommandHandlerStatus in
+            self.audioPlayer?.playImmediately(atRate: 1.0)
             self.isPlayingButton = true
+            return .success
         }
+        
+        
+        pauseCommand.addTarget { (_) -> MPRemoteCommandHandlerStatus in
+            self.audioPlayer?.pause()
+            self.isPlayingButton = false
+            return .success
+        }
+        
+        
+        
+        nextTrackCommand.addTarget { (_) -> MPRemoteCommandHandlerStatus in
+            if self.currentAudioTime > 0 {
+                let currentTime = self.currentAudioTime+10000.0
+                self.seekTo(time: currentTime/1000)
+                return .success
+            }else{
+                return .success
+            }
+            
+        }
+        
+        previousTrackCommand.addTarget { (_) -> MPRemoteCommandHandlerStatus in
+            if self.currentAudioTime > 10000 {
+                let currentTime = self.currentAudioTime-10000.0
+                self.seekTo(time: currentTime/1000)
+                return .success
+            }else{
+                self.seekTo(time: 0)
+                return .success
+            }
+        }
+        
+        
+        changePlaybackPositionCommand.addTarget {  (remoteEvent) -> MPRemoteCommandHandlerStatus in
+                if let event = remoteEvent as? MPChangePlaybackPositionCommandEvent {
+                    print("Position Time Is",event.positionTime)
+                    self.seekTo(time: event.positionTime)
+                    return .success
+                }
+            return .commandFailed
+        }
+        
+        
+        //    @objc func playPauseNotification(event : MPSkipIntervalCommandEvent){
+        //        if audioPlayer?.timeControlStatus == AVPlayer.TimeControlStatus.playing{
+        //            print("Setting Player To Pause")
+        //            audioPlayer?.pause()
+        //            self.isPlayingButton = false
+        //        }else{
+        //            print("Setting Player To Play")
+        //            audioPlayer?.play()
+        //            self.isPlayingButton = true
+        //        }
+        //    }
     }
+    
 }
 
