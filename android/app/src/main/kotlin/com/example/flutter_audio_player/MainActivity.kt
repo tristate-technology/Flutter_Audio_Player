@@ -27,6 +27,7 @@ import com.google.android.exoplayer2.PlaybackParameters
 import com.google.android.exoplayer2.Timeline
 import com.google.android.exoplayer2.source.TrackGroupArray
 import com.google.android.exoplayer2.trackselection.TrackSelectionArray
+import io.flutter.embedding.engine.FlutterEngine
 import java.lang.Exception
 
 class MainActivity: FlutterActivity() {
@@ -60,7 +61,7 @@ class MainActivity: FlutterActivity() {
   override fun onCreate(savedInstanceState: Bundle?) {
 
     super.onCreate(savedInstanceState)
-    GeneratedPluginRegistrant.registerWith(this)
+    GeneratedPluginRegistrant.registerWith(FlutterEngine(applicationContext))
 
     seekBarProgressHandler = Handler()
     initUpVolumeControl()
